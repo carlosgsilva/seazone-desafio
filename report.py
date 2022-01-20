@@ -19,14 +19,14 @@ def data_collect( path) :
     return data
 
 def data_cleaning( details_raw, priceav_raw ):
-    # Remove features desnecessárias para análise
+    # Remove colunas desnecessárias para análise
     details_df = details_raw.drop(columns=['ad_name'])
     priceav_df = priceav_raw.drop(columns=['Unnamed: 0.1'])
 
-    # Droping data que possui quantidade insignificante de missing values
+    # Eliminando dados que possuem missing values
     details_df = details_df.dropna(subset=['number_of_bathrooms', 'number_of_reviews','number_of_bedrooms'])
 
-    # Completando missing values que são muito importantes para serem eliminados, preenchendo-os com a mediana entre eles
+    # Preenchendo os dados que faltam das avaliações com a mediana
     details_df = details_df.fillna(details_df['star_rating'].median())
 
     # Alterando Supehost 0 = Não; 1 = Sim
@@ -55,7 +55,7 @@ def data_overview( data_details, data_priceav ):
     data_details_df.columns = ['Listing', 'Bairro', 'Quartos', 'Banheiros', 'Pontuação', 'Superhost',  'Avaliações']
     data_priceav_df.columns = ['Listing', 'Reservado em', 'Data', 'Preço',  'Ocupado']
 
-    # Características de cada anúncios
+    # Características de cada anúncios (Tabela)
     fig = go.Figure(
             data = [go.Table (columnorder = [0,1,2,3,4,5,6,], columnwidth = [10, 15, 10, 10, 10, 10, 10],
                 header = dict(
@@ -77,7 +77,7 @@ def data_overview( data_details, data_priceav ):
     fig.update_layout( title_text="Características de cada anúncio",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)  
     cw1.plotly_chart( fig, use_container_width=True )  
     
-    # Dados de ocupação e preço de anúncios    
+    # Dados de ocupação e preço de anúncios  (Tabela)
     fig = go.Figure(
             data = [go.Table ( columnorder = [0,1, 2, 3, 4], columnwidth = [10, 15, 10, 10, 10],
                 header = dict(
@@ -106,7 +106,7 @@ def listing_by_suburb( data_details ):
     with st.expander("Bairros em ordem crescente de número de listings"):
         cw1, cw2 = st.columns( ( 3, 2 ) )
 
-        # Gráfico de listagem em ordem crescente de número de listing
+        # Gráfico de listagem em ordem crescente de número de listing (Gráfico de Barras)
         details_df = details_df.groupby('suburb', as_index=False).airbnb_listing_id.count()
         details_df.sort_values(['airbnb_listing_id'], inplace=True)
 
@@ -128,7 +128,7 @@ def listing_by_suburb( data_details ):
                     text= 'O bairro <b>Ingleses</b> possui o maior número de listings <br> Tendo mais que o dobro de listagens <br> que o bairro <b>Cansvieira</b> que é o segundo no rank.') )
         cw1.plotly_chart( fig, use_container_width=False ) 
 
-        # Overview dos dados
+        # Overview dos dados (Tabela)
         details_df.columns = ['Bairro', 'Quantidade de Listagem']
         fig = go.Figure(
             data = [go.Table (columnorder = [0,1], columnwidth = [15, 15],
@@ -161,7 +161,7 @@ def average_revenues_by_listings( data_details, data_priceav ):
         # Combina os datasets
         df = pd.merge(details_df, priceav_df, how='inner')
 
-        # Calcula a média de faturamento dos anúncios por bairro
+        # Calcula a média de faturamento dos anúncios por bairro (Gráfico de barras)
         df = df.groupby('suburb', as_index=False).price_string.mean().round(2)
         df.sort_values(['price_string'], inplace=True)
 
@@ -181,7 +181,7 @@ def average_revenues_by_listings( data_details, data_priceav ):
 
         cw1.plotly_chart( fig, use_container_width=True ) 
 
-        # Overview dos dados
+        # Overview dos dados (Tabela)
         df.columns = ['Bairro', 'Quantidade de Listagem (R$)']
         fig = go.Figure(
             data = [go.Table (columnorder = [0,1], columnwidth = [15, 15],
@@ -216,17 +216,23 @@ def correlation( data_details, data_priceav ):
     with st.expander("Existe correlação entre as características de um anúncio e seu faturamento?"):
         cw1, cw2 = st.columns( ( 2, 2 ) )
 
+        # Juntando os DataFrame
         data_df = details_df.merge(priceav_df)
+
+        # Filtrando apenas os imovéis que estão/foram ocupados
         data_df = data_df.loc[data_df['booked_on'] != 'blank']
 
+        # Correlação do DataFrame
         df_corr = data_df[['airbnb_listing_id','number_of_bedrooms','number_of_bathrooms','star_rating','is_superhost','price_string','number_of_reviews']].groupby('airbnb_listing_id').sum()
         df_corr.columns = ['Quartos', 'Banheiros', 'Pontuação', 'Superhost', 'Preço',  'Avaliações']
 
+        # Correlação entre as características de um an úncio e seu faturamento (Mapa de Calor)
         fig, ax = plt.subplots( figsize=(7, 5) )
         plt.title('Correlação das características de um anúncio x faturamento', fontsize = 14)
         sns.heatmap(df_corr.corr(), ax=ax, annot=True, vmin=0.7, vmax=1, cmap='Reds', cbar=False, annot_kws={"size": 8} )
         cw1.write( fig, use_container_width=True ) 
 
+        # Qual a correlação (Conclusão)
         conclusion = """
             <p style=font-size:24px> <b>Conclusão</b> </p>  
             
@@ -256,13 +262,17 @@ def advance_booking( data_priceav ):
 
         #  Adiantamento de reservas por dia da semana
         priceav_df['days_to_book'] = (priceav_df['date'] - priceav_df['booked_on']).dt.days
+
+        # Criando novas colunas nome do dia da semana e número do dia da semana
         priceav_df['day_of_booking'] = priceav_df['booked_on'].dt.day_name()
         priceav_df['days'] = priceav_df['booked_on'].dt.weekday
 
+        # Tirando a média da antencipação do agendamento
         mean_price_df = priceav_df.copy()
         mean_price_df = mean_price_df.groupby(['day_of_booking', 'days'], as_index=False ).days_to_book.mean().round(0)
         mean_price_df = mean_price_df.set_index('days').sort_values(by='days', ascending=True )
         
+        # Média Reservas antecipadas por dia da semana (Gráfico de linha)
         traco = go.Scatter(
             x = mean_price_df['day_of_booking'], y = mean_price_df['days_to_book'],
             mode='lines+text',
@@ -285,14 +295,18 @@ def advance_booking( data_priceav ):
 
         cw1.plotly_chart( fig, use_container_width=True )
 
+        # Classificar os dias da semana entre fim de semana e semana
         def status( mean_price_df ):
             if mean_price_df['day_of_booking'] == 'Saturday' or mean_price_df['day_of_booking'] == 'Sunday':
                 return 'weekend'
             return 'week' 
         
         mean_price_df['period'] = mean_price_df.apply(status, axis=1)
+        
+        # Agrupando pelo perido fim de semana ou semana
         mean_price_df = mean_price_df[['period','days_to_book']].groupby(['period']).mean()
 
+        # Porcentagem de agendamentos Semana x Fim de Semana (Gráfico de Rosca)
         fig = px.pie(mean_price_df, values='days_to_book',
                             names=['Semana','Final de Semana'],
                             hole=.5,
@@ -310,6 +324,7 @@ def advance_booking( data_priceav ):
 
         cw2.plotly_chart( fig, use_container_width=True )
 
+        # O número de antecedencia é maior ou menor nos fins de semana (Conclusão
         conclusion = """
             <div align="center" width="500px" >
             <p style=font-size:30px> <b>Conclusão</b> </p>  
@@ -324,6 +339,24 @@ def advance_booking( data_priceav ):
         st.markdown( conclusion, unsafe_allow_html=True )
 
     return None
+
+def feedback():
+
+    with st.expander( 'Feedback' ):    
+        feedback = """
+            <div align="center" width="500px" >
+            <p style=font-size:30px> <b>Feedback do Desafio</b> </p>  
+            
+            ---
+            <p style=font-size: 25px; text-align: center>
+                Um desafio que por mais simple que parece ser, foi bem desafiador, pude por em prática alguns dos conhecimentos que já tinha e aprender a utilizar
+                novas ferramentas para melhorar minhas entregas como o streamlit. O desafio em si possui um objetivo bem claro e direto, as dicas ajudaram muito 
+                na parte de planejamento e entrega. <br>
+                Agradeço a oportunidade de ter tido essa experiência satisfatória, independente do resultado.
+            </p>
+            </div>
+        """
+        st.markdown( feedback, unsafe_allow_html=True )
 
 if __name__ == '__main__':
     details_raw = data_collect( './data/desafio_details.csv' )
@@ -342,5 +375,7 @@ if __name__ == '__main__':
     correlation( df_details, df_priceav )
 
     advance_booking( df_priceav )
+
+    feedback()
 
     
