@@ -1,4 +1,4 @@
-# Desafio Prático Seazone - Analista de Dados Jr.
+# Desafio Prático Seazone - Analista de Dados Jr
 
 ---
 O desafio consiste em analisar os dados de ocupação e preço de anúncios no
