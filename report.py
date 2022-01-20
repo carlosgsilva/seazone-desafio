@@ -351,7 +351,7 @@ def feedback():
             <p style=font-size: 25px; text-align: center>
                 Um desafio que por mais simple que parece ser, foi bem desafiador, pude por em prática alguns dos conhecimentos que já tinha e aprender a utilizar
                 novas ferramentas para melhorar minhas entregas como o streamlit. O desafio em si possui um objetivo bem claro e direto, as dicas ajudaram muito 
-                na parte de planejamento e entrega. <br>
+                na parte de planejamento e entrega.
                 Agradeço a oportunidade de ter tido essa experiência satisfatória, independente do resultado.
             </p>
             </div>
