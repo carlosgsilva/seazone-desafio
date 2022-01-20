@@ -2,13 +2,13 @@
 Created on Wen Jan 17 2022
 @author: Carlos Silva
 """
-from ctypes import alignment
 import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 st.set_page_config(page_title='Seazone - Desafio',  layout='wide', page_icon='./img/seazone-icon.png')
 
@@ -30,11 +30,7 @@ def data_cleaning( details_raw, priceav_raw ):
     details_df = details_df.fillna(details_df['star_rating'].median())
 
     # Alterando Supehost 0 = Não; 1 = Sim
-    details_df['is_superhost'].replace({False: 0, True: 1}, inplace=True)
-
-    # Ignorando o valor do tempo presente em 'booked_on'
-    priceav_df = priceav_df
-    priceav_df['booked_on'] = priceav_df['booked_on'].apply(lambda x: x.split(' ')[0])
+    details_df['is_superhost'].replace({False: 0, True: 1}, inplace=True)   
 
     return details_df, priceav_df
 
@@ -78,12 +74,12 @@ def data_overview( data_details, data_priceav ):
                   line_color = 'rgba(255,255,255,0.2)',
                   height=20))])
     
-    fig.update_layout(title_text="Características de cada anúncio",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)  
-    cw1.plotly_chart(fig, use_container_width=True)  
+    fig.update_layout( title_text="Características de cada anúncio",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)  
+    cw1.plotly_chart( fig, use_container_width=True )  
     
     # Dados de ocupação e preço de anúncios    
     fig = go.Figure(
-            data = [go.Table (columnorder = [0,1, 2, 3, 4], columnwidth = [10, 15, 10, 10, 10],
+            data = [go.Table ( columnorder = [0,1, 2, 3, 4], columnwidth = [10, 15, 10, 10, 10],
                 header = dict(
                  values = list(data_priceav_df.columns),
                  font=dict(size=12, color = 'white'),
@@ -96,10 +92,10 @@ def data_overview( data_details, data_priceav ):
                   font=dict(size=12),
                   align = 'left',
                   fill_color='#F0F2F6',
-                  height=20))]) 
+                  height=20))] ) 
         
-    fig.update_layout(title_text="Dados de ocupação e preço de anúncios",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)
-    cw2.plotly_chart(fig, use_container_width=True)
+    fig.update_layout( title_text="Dados de ocupação e preço de anúncios",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)
+    cw2.plotly_chart( fig, use_container_width=True )
 
     return None
 
@@ -203,7 +199,11 @@ def average_revenues_by_listings( data_details, data_priceav ):
                   fill_color='#F0F2F6',
                   height=20))]) 
         
-        fig.update_layout(title_text="Faturamento médio dos listings por bairro",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)
+        fig.update_layout(title_text="Faturamento médio dos listings por bairro",
+                                        title_font_color = '#264653',
+                                        title_x=0, 
+                                        margin= dict(l=0,r=10,b=10,t=30),
+                                        height=480)
         cw2.plotly_chart(fig, use_container_width=True)
 
     return None
@@ -241,6 +241,90 @@ def correlation( data_details, data_priceav ):
 
     return None
 
+def advance_booking( data_priceav ):
+    priceav_df = data_priceav.copy()
+
+    with st.expander( 'Qual a antecedência média das reservas' ):
+        cw1, cw2 = st.columns( ( 3, 2 ) )
+
+        # Filtrando apenas os que já foram/estão ocupados 
+        priceav_df = priceav_df.get(priceav_df['occupied']==1)
+
+        # Transformando as colunas 'booked_on' e 'date' em datetime
+        priceav_df['booked_on'] = pd.to_datetime(priceav_df['booked_on'])
+        priceav_df['date'] = pd.to_datetime(priceav_df['date'])
+
+        #  Adiantamento de reservas por dia da semana
+        priceav_df['days_to_book'] = (priceav_df['date'] - priceav_df['booked_on']).dt.days
+        priceav_df['day_of_booking'] = priceav_df['booked_on'].dt.day_name()
+        priceav_df['days'] = priceav_df['booked_on'].dt.weekday
+
+        mean_price_df = priceav_df.copy()
+        mean_price_df = mean_price_df.groupby(['day_of_booking', 'days'], as_index=False ).days_to_book.mean().round(0)
+        mean_price_df = mean_price_df.set_index('days').sort_values(by='days', ascending=True )
+        
+        traco = go.Scatter(
+            x = mean_price_df['day_of_booking'], y = mean_price_df['days_to_book'],
+            mode='lines+text',
+            line=dict(width=0.5, color='lightslategray', dash='solid'),
+            fill='tonexty', fillcolor = 'lightslategray',
+            text=mean_price_df['days_to_book'],
+            textfont=dict(size=14,color='black'),
+            textposition=["top right", "top center", "top center", "top center", "top center", "top center", "top left" ],
+            opacity=0.8
+         )
+
+        layout = go.Layout(title = 'Reservas Antecipadas x Dia da Semana',
+                                         title_font_color = 'black',
+                                         margin= dict(l=0,r=10,b=10,t=30),
+                                         height=480,
+                                         xaxis_title='Dias da Seamana', yaxis_title='Média de Antecedência',
+                                         template='plotly_white' )
+
+        fig = go.Figure( data=traco, layout=layout)
+
+        cw1.plotly_chart( fig, use_container_width=True )
+
+        def status( mean_price_df ):
+            if mean_price_df['day_of_booking'] == 'Saturday' or mean_price_df['day_of_booking'] == 'Sunday':
+                return 'weekend'
+            return 'week' 
+        
+        mean_price_df['period'] = mean_price_df.apply(status, axis=1)
+        mean_price_df = mean_price_df[['period','days_to_book']].groupby(['period']).mean()
+
+        fig = px.pie(mean_price_df, values='days_to_book',
+                            names=['Semana','Final de Semana'],
+                            hole=.5,
+                            title='Verificação da antecedencia média durante semana')
+
+        fig.update_traces(textposition='auto',
+                                        textinfo='percent',
+                                        textfont_size=20,
+                                        marker=dict(colors=['crimson', 'lightslategray']))
+        fig.update_layout( title_text="Bairros x Faturamento", 
+                                        title_x=0,margin= dict(l=30,r=10,b=10,t=30),
+                                        hoverlabel=dict(bgcolor="black",
+                                        font_size=8, 
+                                        font_family="Lato, sans-serif") )   
+
+        cw2.plotly_chart( fig, use_container_width=True )
+
+        conclusion = """
+            <div align="center" width="500px" >
+            <p style=font-size:30px> <b>Conclusão</b> </p>  
+            
+            ---
+            <p style=font-size: 25px; text-align: center>
+                Como podemos visualizar nos gráficos, com uma antecedencia média de 40 dias (59,7%) é realizado durante a semana e nos fins de semana <b>27 dias</b> (40,3%). <br>
+                Os dias de <i>Quarta</i>, <i>Quinta</i> e <i>Sexta</i> são os dias que as reservas são feitas com mais antecendencia, com uma média de <b>47 dias</b>.
+            </p>
+            </div>
+        """
+        st.markdown( conclusion, unsafe_allow_html=True )
+
+    return None
+
 if __name__ == '__main__':
     details_raw = data_collect( './data/desafio_details.csv' )
     priceav_raw = data_collect( './data/desafio_priceav.csv' )
@@ -256,5 +340,7 @@ if __name__ == '__main__':
     average_revenues_by_listings( df_details, df_priceav )
 
     correlation( df_details, df_priceav )
+
+    advance_booking( df_priceav )
 
     
