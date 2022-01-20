@@ -7,6 +7,8 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 st.set_page_config(page_title='Seazone - Desafio',  layout='wide', page_icon='./img/seazone-icon.png')
 
@@ -128,7 +130,7 @@ def listing_by_suburb( data_details ):
         fig.add_annotation( dict(x=0.3, y=0.7, ax=0, ay=0,
                     xref = "paper", yref = "paper",
                     text= 'O bairro <b>Ingleses</b> possui o maior número de listings <br> Tendo mais que o dobro de listagens <br> que o bairro <b>Cansvieira</b> que é o segundo no rank.') )
-        cw1.plotly_chart( fig, use_container_width=False, align='center' ) 
+        cw1.plotly_chart( fig, use_container_width=False ) 
 
         # Overview dos dados
         details_df.columns = ['Bairro', 'Quantidade de Listagem']
@@ -175,7 +177,7 @@ def average_revenues_by_listings( data_details, data_priceav ):
         fig.update_traces( marker_color=colors, text=df.price_string, texttemplate="R%{y:$.2f}")
         fig.update_layout( title_text="Bairros x Faturamento", 
                                         title_x=0,margin= dict(l=30,r=10,b=10,t=30), 
-                                        yaxis_title='Listings', xaxis_title='Bairros', 
+                                        yaxis_title='Faturamento Médio', xaxis_title='Bairros', 
                                         hoverlabel=dict(bgcolor="black",
                                         font_size=13, 
                                         font_family="Lato, sans-serif") )                                                                
@@ -206,6 +208,39 @@ def average_revenues_by_listings( data_details, data_priceav ):
 
     return None
 
+def correlation( data_details, data_priceav ):
+
+    details_df = data_details.copy()
+    priceav_df = data_priceav.copy()
+
+    with st.expander("Existe correlação entre as características de um anúncio e seu faturamento?"):
+        cw1, cw2 = st.columns( ( 2, 2 ) )
+
+        data_df = details_df.merge(priceav_df)
+        data_df = data_df.loc[data_df['booked_on'] != 'blank']
+
+        df_corr = data_df[['airbnb_listing_id','number_of_bedrooms','number_of_bathrooms','star_rating','is_superhost','price_string','number_of_reviews']].groupby('airbnb_listing_id').sum()
+        df_corr.columns = ['Quartos', 'Banheiros', 'Pontuação', 'Superhost', 'Preço',  'Avaliações']
+
+        fig, ax = plt.subplots( figsize=(7, 5) )
+        plt.title('Correlação das características de um anúncio x faturamento', fontsize = 14)
+        sns.heatmap(df_corr.corr(), ax=ax, annot=True, vmin=0.7, vmax=1, cmap='Reds', cbar=False, annot_kws={"size": 8} )
+        cw1.write( fig, use_container_width=True ) 
+
+        conclusion = """
+            <p style=font-size:24px> <b>Conclusão</b> </p>  
+            
+            ---
+            <p style=font-size: 20px; text-align: justify>
+            O preço de médio das listagem possui uma forte correlação com o <i>número de quartos</i>, <i>banheiros</i> e <i>pontuação</i>.  
+            Podemos observar que a pontuação por estrelas ( 1 - 5 ) tem uma mais influencia no faturamento médio que as avaliações,  
+            o que pode ser devido o baixo número de avaliações ou que a pontuação é um dos fatores para determinar o preço.
+            </p>
+        """
+        cw2.markdown( conclusion, unsafe_allow_html=True)
+
+    return None
+
 if __name__ == '__main__':
     details_raw = data_collect( './data/desafio_details.csv' )
     priceav_raw = data_collect( './data/desafio_priceav.csv' )
@@ -219,5 +254,7 @@ if __name__ == '__main__':
     listing_by_suburb( df_details )
 
     average_revenues_by_listings( df_details, df_priceav )
+
+    correlation( df_details, df_priceav )
 
     
