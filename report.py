@@ -2,6 +2,7 @@
 Created on Wen Jan 17 2022
 @author: Carlos Silva
 """
+from ctypes import alignment
 import pandas as pd
 import streamlit as st
 import plotly.express as px
@@ -75,8 +76,8 @@ def data_overview( data_details, data_priceav ):
                   line_color = 'rgba(255,255,255,0.2)',
                   height=20))])
     
-    fig.update_layout( title_text="Características de cada anúncio",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)  
-    cw1.plotly_chart( fig )  
+    fig.update_layout(title_text="Características de cada anúncio",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)  
+    cw1.plotly_chart(fig, use_container_width=True)  
     
     # Dados de ocupação e preço de anúncios    
     fig = go.Figure(
@@ -96,7 +97,7 @@ def data_overview( data_details, data_priceav ):
                   height=20))]) 
         
     fig.update_layout(title_text="Dados de ocupação e preço de anúncios",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)
-    cw2.plotly_chart( fig )
+    cw2.plotly_chart(fig, use_container_width=True)
 
     return None
 
@@ -127,7 +128,7 @@ def listing_by_suburb( data_details ):
         fig.add_annotation( dict(x=0.3, y=0.7, ax=0, ay=0,
                     xref = "paper", yref = "paper",
                     text= 'O bairro <b>Ingleses</b> possui o maior número de listings <br> Tendo mais que o dobro de listagens <br> que o bairro <b>Cansvieira</b> que é o segundo no rank.') )
-        cw1.plotly_chart( fig ) 
+        cw1.plotly_chart( fig, use_container_width=False, align='center' ) 
 
         # Overview dos dados
         details_df.columns = ['Bairro', 'Quantidade de Listagem']
@@ -147,8 +148,8 @@ def listing_by_suburb( data_details ):
                   fill_color='#F0F2F6',
                   height=20))]) 
         
-        fig.update_layout( title_text="Quantidade de listagem por bairro",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)
-        cw2.plotly_chart( fig )
+        fig.update_layout(title_text="Quantidade de listagem por bairro",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)
+        cw2.plotly_chart(fig, use_container_width=True)
 
     return None
 
@@ -180,7 +181,7 @@ def average_revenues_by_listings( data_details, data_priceav ):
                                         font_family="Lato, sans-serif") )                                                                
         fig.update_yaxes( showticklabels=False )
 
-        cw1.plotly_chart( fig ) 
+        cw1.plotly_chart( fig, use_container_width=True ) 
 
         # Overview dos dados
         df.columns = ['Bairro', 'Quantidade de Listagem (R$)']
@@ -201,7 +202,7 @@ def average_revenues_by_listings( data_details, data_priceav ):
                   height=20))]) 
         
         fig.update_layout(title_text="Faturamento médio dos listings por bairro",title_font_color = '#264653',title_x=0,margin= dict(l=0,r=10,b=10,t=30), height=480)
-        cw2.plotly_chart(fig)
+        cw2.plotly_chart(fig, use_container_width=True)
 
     return None
 
