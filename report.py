@@ -2,7 +2,6 @@
 Created on Wen Jan 17 2022
 @author: Carlos Silva
 """
-from ctypes import alignment
 import pandas as pd
 import streamlit as st
 import plotly.express as px
